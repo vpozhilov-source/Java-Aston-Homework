@@ -19,8 +19,7 @@ public class ArrayProcessor {
         }
     }
 }
-public static int sumArrayElements (String [] [] array)throws MyArrayDataException 
-{
+public static int sumArrayElements (String [] [] array)throws MyArrayDataException {
         int sum = 0;
         for (int i = 0; i < array.length; i++) {
                 for (int j = 0; j < array[i].length; j++) {
@@ -35,6 +34,10 @@ public static int sumArrayElements (String [] [] array)throws MyArrayDataExcepti
         }
         return sum;
 }
+    public static int processArray(String[][] array) throws MyArraySizeException, MyArrayDataException {
+    checkSize(array);              
+    return sumArrayElements(array); 
+}
     public static void main(String[] args) {
         String[][] array4x4 = {
             {"1", "2", "3", "4"},     
@@ -44,15 +47,13 @@ public static int sumArrayElements (String [] [] array)throws MyArrayDataExcepti
         };
         
         try {
-            checkSize(array4x4);
-              int result = sumArrayElements(array4x4);
-               System.out.println("Size M right! Sum: " + result);
-} 
-        } catch (MyArraySizeException e) {
-            System.out.println("Size error: " + e.getMessage());;
-                } catch (MyArrayDataException e) {
-               System.out.println("Data error: " + e.getMessage()); 
-        }
+        int result = processArray(array4x4);
+        System.out.println("Size M right! Sum: " + result);
+    } catch (MyArraySizeException e) {
+        System.out.println("Size error: " + e.getMessage());
+    } catch (MyArrayDataException e) {
+        System.out.println("Data error: " + e.getMessage()); 
     }
+}
 }
      
