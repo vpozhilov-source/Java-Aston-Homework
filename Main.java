@@ -22,7 +22,7 @@ public class Main {
         }
         
         for (Cat cat : cats) {
-            System.out.println(cat.getName() + " сыт: " + cat.isFull());
+        System.out.println(cat.name + " сыт: " + cat.isFull());        
         }
         
         bowl.addFood(20);
