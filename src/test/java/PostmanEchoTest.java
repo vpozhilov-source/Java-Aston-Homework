@@ -3,6 +3,9 @@ import io.restassured.response.Response;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static io.restassured.RestAssured.*;
 import static org.testng.Assert.*;
 
@@ -11,16 +14,19 @@ public class PostmanEchoTest {
     @BeforeClass
     public void setUp() {
         RestAssured.baseURI = "https://postman-echo.com";
+        RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
     }
 
     @Test
     public void testGetRequest() {
         Response response = given()
+                .log().all()
                 .param("foo1", "bar1")
                 .param("foo2", "bar2")
                 .when()
                 .get("/get")
                 .then()
+                .log().all()
                 .extract().response();
 
         assertEquals(response.getStatusCode(), 200);
@@ -30,22 +36,48 @@ public class PostmanEchoTest {
     }
 
     @Test
-    public void testPostRequest() {
-        String requestBody = "{\"name\": \"John\", \"age\": 30}";
+    public void testPostRequestTextPlain() {
+        String requestBody = "This is raw text data";
 
         Response response = given()
-                .header("Content-Type", "application/json")
+                .log().all()
+                .header("Content-Type", "text/plain")
                 .body(requestBody)
                 .when()
                 .post("/post")
                 .then()
+                .log().all()
                 .extract().response();
 
         assertEquals(response.getStatusCode(), 200);
-        assertEquals(response.jsonPath().getString("data.name"), "John");
-        assertEquals(response.jsonPath().getInt("data.age"), 30);
+        assertEquals(response.jsonPath().getString("data"), requestBody);
         assertEquals(response.jsonPath().getString("url"), "https://postman-echo.com/post");
-        assertEquals(response.jsonPath().getString("headers.content-type"), "application/json");
+        assertTrue(response.jsonPath().getString("headers.content-type").contains("text/plain"));
+    }
+
+    @Test
+    public void testPostRequestFormUrlencoded() {
+        Map<String, String> formParams = new HashMap<>();
+        formParams.put("name", "John");
+        formParams.put("age", "30");
+        formParams.put("city", "New York");
+
+        Response response = given()
+                .log().all()
+                .header("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+                .formParams(formParams)
+                .when()
+                .post("/post")
+                .then()
+                .log().all()
+                .extract().response();
+
+        assertEquals(response.getStatusCode(), 200);
+        assertEquals(response.jsonPath().getString("form.name"), "John");
+        assertEquals(response.jsonPath().getString("form.age"), "30");
+        assertEquals(response.jsonPath().getString("form.city"), "New York");
+        assertEquals(response.jsonPath().getString("url"), "https://postman-echo.com/post");
+        assertTrue(response.jsonPath().getString("headers.content-type").contains("application/x-www-form-urlencoded"));
     }
 
     @Test
@@ -53,11 +85,13 @@ public class PostmanEchoTest {
         String requestBody = "{\"title\": \"Test\", \"completed\": false}";
 
         Response response = given()
+                .log().all()
                 .header("Content-Type", "application/json")
                 .body(requestBody)
                 .when()
                 .put("/put")
                 .then()
+                .log().all()
                 .extract().response();
 
         assertEquals(response.getStatusCode(), 200);
@@ -71,11 +105,13 @@ public class PostmanEchoTest {
         String requestBody = "{\"updated\": true}";
 
         Response response = given()
+                .log().all()
                 .header("Content-Type", "application/json")
                 .body(requestBody)
                 .when()
                 .patch("/patch")
                 .then()
+                .log().all()
                 .extract().response();
 
         assertEquals(response.getStatusCode(), 200);
@@ -86,9 +122,11 @@ public class PostmanEchoTest {
     @Test
     public void testDeleteRequest() {
         Response response = given()
+                .log().all()
                 .when()
                 .delete("/delete")
                 .then()
+                .log().all()
                 .extract().response();
 
         assertEquals(response.getStatusCode(), 200);
