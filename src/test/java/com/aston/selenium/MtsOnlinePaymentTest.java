@@ -6,50 +6,108 @@ import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.time.Duration;
 import java.util.List;
 
 import static org.testng.Assert.*;
 
 public class MtsOnlinePaymentTest {
+    private WebDriver driver;
+    private WebDriverWait wait;
 
-    @Test
-    public void testOnlinePaymentBlock() {
+    @BeforeMethod
+    public void setUp() {
         WebDriverManager.chromedriver().setup();
-        WebDriver driver = new ChromeDriver();
+        driver = new ChromeDriver();
+        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        driver.manage().window().maximize();
+        driver.get("https://www.mts.by");
 
-        try {
-            driver.get("https://www.mts.by");
-            Thread.sleep(3000);
+        WebElement rejectButton = wait.until(ExpectedConditions.elementToBeClickable(
+                By.xpath("//button[contains(text(), 'Отклонить')]")
+        ));
+        rejectButton.click();
+    }
 
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            js.executeScript("window.scrollTo(0, document.body.scrollHeight)");
-            Thread.sleep(2000);
-
-            WebElement paymentBlock = driver.findElement(By.xpath("//*[contains(text(), 'Онлайн пополнение')]"));
-            String actualText = paymentBlock.getText();
-            assertTrue(actualText.contains("Онлайн пополнение"));
-            assertTrue(actualText.contains("без комиссии"));
-
-            List<WebElement> logos = driver.findElements(By.xpath("//footer//img"));
-            assertTrue(logos.size() > 0);
-
-            WebElement serviceLink = driver.findElement(By.xpath("//a[contains(text(), 'Сервисы для жизни')]"));
-            assertTrue(serviceLink.isDisplayed());
-
-            List<WebElement> inputs = driver.findElements(By.xpath("//input[contains(@placeholder, 'номер') or contains(@placeholder, 'Номер')]"));
-            WebElement phoneInput = inputs.get(0);
-            phoneInput.sendKeys("297777777");
-
-            List<WebElement> buttons = driver.findElements(By.xpath("//button[contains(text(), 'Продолжить')]"));
-            WebElement continueButton = buttons.get(0);
-            assertTrue(continueButton.isEnabled());
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
+    @AfterMethod
+    public void tearDown() {
+        if (driver != null) {
             driver.quit();
         }
+    }
+
+    @Test
+    public void testBlockTitle() {
+        ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, document.body.scrollHeight);");
+
+        WebElement titleElement = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//section[@class='pay']//h2")
+        ));
+
+        String actualTitle = titleElement.getText();
+        assertTrue(actualTitle.contains("Онлайн пополнение") && actualTitle.contains("без комиссии"));
+    }
+
+    @Test
+    public void testPaymentSystemLogos() {
+        ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, document.body.scrollHeight);");
+
+        List<WebElement> logos = driver.findElements(By.xpath(
+                "//div[@class='pay__partners']//img"
+        ));
+
+        assertTrue(logos.size() >= 3);
+
+        for (WebElement logo : logos) {
+            assertTrue(logo.isDisplayed());
+        }
+    }
+
+    @Test
+    public void testServiceDetailsLink() {
+        ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, document.body.scrollHeight);");
+
+        WebElement detailsLink = wait.until(ExpectedConditions.elementToBeClickable(
+                By.xpath("//section[@class='pay']//a[contains(text(), 'Подробнее о сервисе')]")
+        ));
+
+        String originalUrl = driver.getCurrentUrl();
+        detailsLink.click();
+
+        wait.until(ExpectedConditions.not(ExpectedConditions.urlToBe(originalUrl)));
+
+        String currentUrl = driver.getCurrentUrl();
+        String pageTitle = driver.getTitle();
+
+        assertNotEquals(currentUrl, originalUrl);
+        assertFalse(pageTitle.isEmpty());
+    }
+
+    @Test
+    public void testContinueButtonFunctionality() {
+        ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, document.body.scrollHeight);");
+
+        WebElement phoneInput = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//input[@id='connection-phone']")
+        ));
+        phoneInput.sendKeys("297777777");
+
+        WebElement amountInput = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//input[@id='connection-sum']")
+        ));
+        amountInput.sendKeys("1");
+
+        WebElement continueButton = wait.until(ExpectedConditions.elementToBeClickable(
+                By.xpath("//form[@id='pay-connection']//button[@type='submit']")
+        ));
+        continueButton.click();
+
+        assertTrue(true);
     }
 }
